@@ -1,4 +1,6 @@
-﻿namespace DentallApp.Features.OfficeSchedules;
+﻿using DentallApp.Features.WeekDays;
+
+namespace DentallApp.Features.OfficeSchedules;
 
 public class OfficeScheduleService : IOfficeScheduleService
 {
@@ -50,20 +52,20 @@ public class OfficeScheduleService : IOfficeScheduleService
         if (schedules.Count() == WeekDaysType.MaxWeekDay)
             return schedules;
 
-        foreach (var (weekDayId, weekDayName) in WeekDaysType.WeekDays)
-        {
-            if (schedules.Find(scheduleDto => scheduleDto.WeekDayId == weekDayId) is null)
-            {
-                var newScheduleDto = new OfficeScheduleDto
-                {
-                    WeekDayId   = weekDayId,
-                    WeekDayName = weekDayName,
-                    Schedule    = notAvailable
-                };
-                schedules.Add(newScheduleDto);
-            }
-        }
-        return schedules.OrderBy(scheduleDto => scheduleDto.WeekDayId).ToList();
+        var consult = (from weekDay in WeekDaysType.WeekDays
+                      orderby weekDay.Key
+                      where (from schedule in schedules
+                             where schedule.WeekDayId == weekDay.Key
+                             select schedule) is null
+
+                      select new OfficeScheduleDto
+                      {
+                          WeekDayId = weekDay.Key,
+                          WeekDayName = weekDay.Value,
+                          Schedule = notAvailable
+                      }).ToList();
+
+        return consult;
     }
 
     public async Task<IEnumerable<OfficeScheduleGetDto>> GetOfficeScheduleByOfficeIdAsync(int officeId)
